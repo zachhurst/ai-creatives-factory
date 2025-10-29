@@ -35,8 +35,6 @@ export function ProductCard({ product: productProp }) {
       console.log('🔍 DEBUG: Product description:', product.description);
       console.log('🔍 DEBUG: Has reference images:', hasReferenceImages(product));
       
-      setProgress('Generating creative angles...');
-      
       console.log('🔍 DEBUG: Calling generateCreativeAngles...');
       const anglesData = await generateCreativeAngles(product.name, product.description, 5, hasReferenceImages(product));
       console.log('🔍 DEBUG: Raw response from generateCreativeAngles:', anglesData);
