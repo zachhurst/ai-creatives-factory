@@ -184,8 +184,8 @@ export function ProductCard({ product }) {
         </div>
       )}
 
-      {/* Progress Components */}
-      {progress && typeof progress === 'object' && (
+      {/* Progress Components - Only show during active generation */}
+      {loading && progress && typeof progress === 'object' && (
         <>
           <GenerationProgress progress={progress} onCancel={handleCancelGeneration} />
           <GenerationErrorRecovery progress={progress} onRetryFailed={handleRetryFailed} onRemoveFailed={handleRemoveFailed} />
@@ -237,7 +237,7 @@ export function ProductCard({ product }) {
       )}
 
       {/* Generated Images */}
-      {product.images && product.images.length > 0 && (typeof progress !== 'object' || !progress) && (
+      {product.images && product.images.length > 0 && !loading && (
         <div>
           <h4 className="font-semibold text-gray-700 mb-2">Generated Images:</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
