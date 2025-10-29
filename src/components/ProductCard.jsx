@@ -11,9 +11,13 @@ import { IncrementalImageDisplay } from './IncrementalImageDisplay';
 import { GenerationErrorRecovery } from './GenerationErrorRecovery';
 import { useDialog, dialogHelpers } from './ui/DialogProvider';
 
-export function ProductCard({ product }) {
-  const { updateProduct, deleteProduct } = useProductStore();
+export function ProductCard({ product: productProp }) {
+  const { updateProduct, deleteProduct, products } = useProductStore();
   const { showAlert, showConfirm, showSuccess } = useDialog();
+  
+  // Get fresh product from store for reactive updates
+  const product = products.find(p => p.id === productProp.id) || productProp;
+  
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(null);
   const [generationId, setGenerationId] = useState(null);
