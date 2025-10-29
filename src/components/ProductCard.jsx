@@ -4,10 +4,12 @@ import { useProductStore } from '../store/productStore';
 import { generateCreativeAngles } from '../services/groqService';
 import { generateMultipleImagesWithReference } from '../services/falService';
 import { downloadImage, formatDate, hasReferenceImages, getGenerationMode } from '../utils/helpers';
+import { useDialog } from './ui/DialogProvider';
 import { ImagePreview } from './ImagePreview';
 
 export function ProductCard({ product }) {
   const { updateProduct, deleteProduct } = useProductStore();
+  const { showAlert, showConfirm, showSuccess } = useDialog();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
 
@@ -61,10 +63,10 @@ export function ProductCard({ product }) {
 
       setProgress('');
       const modeText = hasRefs ? 'using reference images' : 'from text';
-      alert(`Successfully generated ${successfulImages.length} images ${modeText}!`);
+      showSuccess(`Successfully generated ${successfulImages.length} images ${modeText}!`);
     } catch (error) {
       console.error('Error generating creatives:', error);
-      alert(`Error: ${error.message}`);
+      showAlert(`Error: ${error.message}`);
       setProgress('');
     } finally {
       setLoading(false);
@@ -76,12 +78,13 @@ export function ProductCard({ product }) {
       const filename = `${product.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-creative-${index + 1}.jpg`;
       await downloadImage(url, filename);
     } catch (error) {
-      alert('Failed to download image');
+      showAlert('Failed to download image');
     }
   };
 
-  const handleDeleteProduct = () => {
-    if (confirm('Delete this product and all its data? This cannot be undone.')) {
+  const handleDeleteProduct = async () => {
+    const confirmed = await showConfirm('Delete this product and all its data? This cannot be undone.');
+    if (confirmed) {
       deleteProduct(product.id);
     }
   };
