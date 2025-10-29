@@ -84,19 +84,53 @@ async function pollForResult(requestId, maxAttempts = 60) {
   throw new Error('Image generation timed out after 60 seconds');
 }
 
-export async function generateMultipleImages(prompts, options = {}) {
-  const results = [];
-  
-  for (const prompt of prompts) {
+/**
+ * Generate multiple images in PARALLEL with progress callbacks
+ * @param prompts - Array of image prompts
+ * @param options - Generation options
+ * @param onProgress - Optional callback: (index, status, data) => void
+ */
+export async function generateMultipleImages(
+  prompts, 
+  options = {},
+  onProgress = null
+) {
+  // Create array of promises for parallel execution
+  const imagePromises = prompts.map(async (prompt, index) => {
     try {
+      // Notify start
+      onProgress?.(index, 'generating', { prompt });
+      
+      // Generate image
       const result = await generateImage(prompt, options);
-      results.push({ prompt, url: result.url, success: true });
+      
+      // Notify success
+      onProgress?.(index, 'success', { url: result.url, prompt });
+      
+      return { 
+        prompt, 
+        url: result.url, 
+        success: true,
+        index 
+      };
     } catch (error) {
-      results.push({ prompt, error: error.message, success: false });
+      // Notify error
+      onProgress?.(index, 'error', { error: error.message, prompt });
+      
+      return { 
+        prompt, 
+        error: error.message, 
+        success: false,
+        index 
+      };
     }
-  }
+  });
+
+  // Execute all in parallel and wait for completion
+  const results = await Promise.all(imagePromises);
   
-  return results;
+  // Sort by original index to maintain order
+  return results.sort((a, b) => a.index - b.index);
 }
 
 export async function testFalConnection() {
