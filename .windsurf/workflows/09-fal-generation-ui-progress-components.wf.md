@@ -1,3 +1,8 @@
+---
+description: 
+auto_execution_mode: 3
+---
+
 # AI Creative Factory - Fal.ai Generation UI Improvements
 ## WORKFLOW PHASE 9: Progress UI Components (Part 2A of 3)
 

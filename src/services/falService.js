@@ -179,36 +179,52 @@ export async function generateImageWithReference(prompt, referenceImageUrls, opt
  * Generate multiple images with optional reference images
  * Automatically chooses appropriate endpoint based on reference images
  */
-export async function generateMultipleImagesWithReference(prompts, referenceImageUrls = [], options = {}) {
-  const results = [];
-  
-  for (const prompt of prompts) {
+export async function generateMultipleImagesWithReference(
+  prompts, 
+  referenceImageUrls = [], 
+  options = {},
+  onProgress = null  // ← NEW: Progress callback
+) {
+  // Create all generation promises in parallel
+  const imagePromises = prompts.map(async (prompt, index) => {
     try {
-      let result;
+      // Notify start of generation
+      onProgress?.(index, 'generating', null);
       
+      let result;
       if (referenceImageUrls.length > 0) {
-        // Use image editing endpoint with reference images
         result = await generateImageWithReference(prompt, referenceImageUrls, options);
       } else {
-        // Use text-to-image endpoint (original behavior)
         result = await generateImage(prompt, options);
       }
       
-      results.push({ 
+      // Notify successful completion
+      onProgress?.(index, 'success', result.url);
+      
+      return { 
         prompt, 
         url: result.url, 
-        success: true 
-      });
+        success: true,
+        index  // ← NEW: Track original order
+      };
     } catch (error) {
-      results.push({ 
+      // Notify error
+      onProgress?.(index, 'error', error.message);
+      
+      return { 
         prompt, 
         error: error.message, 
-        success: false 
-      });
+        success: false,
+        index  // ← NEW: Track original order
+      };
     }
-  }
+  });
+
+  // Execute all promises in parallel
+  const results = await Promise.all(imagePromises);
   
-  return results;
+  // Sort by original index to maintain order
+  return results.sort((a, b) => a.index - b.index);
 }
 
 /**

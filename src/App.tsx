@@ -3,6 +3,7 @@ import { StatsDashboard } from './components/StatsDashboard';
 import { ProductForm } from './components/ProductForm';
 import { ProductList } from './components/ProductList';
 import { ImageUploadTest } from './components/ImageUploadTest';
+import { ParallelGenerationTest } from './components/ParallelGenerationTest';
 
 function App() {
   return (
@@ -16,8 +17,9 @@ function App() {
         
         {/* Development Testing Section */}
         {import.meta.env.DEV && (
-          <div className="mt-8">
+          <div className="mt-8 space-y-6">
             <ImageUploadTest />
+            <ParallelGenerationTest />
           </div>
         )}
       </main>

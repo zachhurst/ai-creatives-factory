@@ -1,3 +1,8 @@
+---
+description: 
+auto_execution_mode: 3
+---
+
 # AI Creative Factory - Fal.ai Generation UI Improvements
 ## WORKFLOW PHASE 10: Complete Integration (Part 3 of 3)
 
