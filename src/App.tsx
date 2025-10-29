@@ -3,10 +3,12 @@ import { StatsDashboard } from './components/StatsDashboard';
 import { ProductForm } from './components/ProductForm';
 import { ProductList } from './components/ProductList';
 import { ImageUploadTest } from './components/ImageUploadTest';
+import { DialogProvider } from './components/ui/DialogProvider';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <DialogProvider>
+      <div className="min-h-screen bg-gray-50">
       <Header />
       
       <main className="container mx-auto px-6 py-8">
@@ -37,6 +39,7 @@ function App() {
         </div>
       </footer>
     </div>
+    </DialogProvider>
   );
 }
 

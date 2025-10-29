@@ -6,9 +6,11 @@ import { generateMultipleImages } from '../services/falService';
 import { downloadImage, formatDate } from '../utils/helpers';
 import { GenerationProgress } from './GenerationProgress';
 import { ImageGenerationProgress, ImageGenerationStatus } from '../utils/imageGeneration';
+import { useDialog } from './ui/DialogProvider';
 
 export function ProductCard({ product }) {
   const { updateProduct, deleteProduct } = useProductStore();
+  const { showAlert, showConfirm, showSuccess } = useDialog();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(null);
   const [updateCounter, setUpdateCounter] = useState(0);
@@ -59,18 +61,19 @@ export function ProductCard({ product }) {
       });
 
       setProgress(null);  // Clear progress on completion
-      alert(`Successfully generated ${successfulImages.length} images!`);
+      showSuccess(`Successfully generated ${successfulImages.length} images!`);
     } catch (error) {
       console.error('Error generating creatives:', error);
-      alert(`Error: ${error.message}`);
+      showAlert(`Error: ${error.message}`);
       setProgress(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = () => {
-    if (confirm(`Delete "${product.name}"? This cannot be undone.`)) {
+  const handleDelete = async () => {
+    const confirmed = await showConfirm(`Delete "${product.name}"? This cannot be undone.`);
+    if (confirmed) {
       deleteProduct(product.id);
     }
   };
@@ -80,7 +83,7 @@ export function ProductCard({ product }) {
     try {
       await downloadImage(url, filename);
     } catch (error) {
-      alert('Failed to download image');
+      showAlert('Failed to download image');
     }
   };
 
