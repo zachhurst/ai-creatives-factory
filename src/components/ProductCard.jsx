@@ -85,16 +85,18 @@ export function ProductCard({ product }) {
       updateProduct(product.id, { images: successfulImages, lastGenerated: new Date().toISOString() });
       
       console.log('🔍 DEBUG: Product updated!');
+      console.log('🔍 DEBUG: Clearing progress to show final images...');
+
+      // Clear progress immediately so final images display
+      setProgress(null);
 
       const modeText = hasReferenceImages(product) ? 'using reference images' : 'from text';
       showSuccess(dialogHelpers.generationSuccess(successfulImages.length, modeText));
-      setProgress(`✅ Generated ${successfulImages.length} images!`);
-      setTimeout(() => { if (generationId === currentGenerationId) setProgress(null); }, 3000);
 
     } catch (error) {
+      console.log('🔍 DEBUG: Error occurred:', error);
+      setProgress(null);
       showAlert(dialogHelpers.generationError(error.message));
-      setProgress(`❌ Error: ${error.message}`);
-      setTimeout(() => { if (generationId === currentGenerationId) setProgress(null); }, 5000);
     } finally {
       setLoading(false);
     }
