@@ -46,6 +46,9 @@ export function ProductCard({ product }) {
         throw new Error('No creative angles generated');
       }
 
+      // Save creative angles to product
+      updateProduct(product.id, { creativeAngles: angles });
+
       // Create progress tracker
       const imageProgress = new ImageGenerationProgress(angles.length);
       setProgress(imageProgress);
