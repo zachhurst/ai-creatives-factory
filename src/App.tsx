@@ -4,6 +4,7 @@ import { ProductForm } from './components/ProductForm';
 import { ProductList } from './components/ProductList';
 import { ImageUploadTest } from './components/ImageUploadTest';
 import { ParallelGenerationTest } from './components/ParallelGenerationTest';
+import { FalGenerationTest } from './components/FalGenerationTest';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <div className="mt-8 space-y-6">
             <ImageUploadTest />
             <ParallelGenerationTest />
+            <FalGenerationTest />
           </div>
         )}
       </main>

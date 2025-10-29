@@ -1,84 +1,109 @@
-import { useState } from 'react';
-import { Trash2, Download, Wand2, Eye } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Trash2, Download, Wand2, Eye, Sparkles, AlertTriangle } from 'lucide-react';
 import { useProductStore } from '../store/productStore';
 import { generateCreativeAngles } from '../services/groqService';
 import { generateMultipleImagesWithReference } from '../services/falService';
 import { downloadImage, formatDate, hasReferenceImages, getGenerationMode } from '../utils/helpers';
 import { ImagePreview } from './ImagePreview';
+import { ImageGenerationProgress } from '../utils/imageGeneration';
+import { GenerationProgress } from './GenerationProgress';
+import { IncrementalImageDisplay } from './IncrementalImageDisplay';
+import { GenerationErrorRecovery } from './GenerationErrorRecovery';
 
 export function ProductCard({ product }) {
   const { updateProduct, deleteProduct } = useProductStore();
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState('');
+  const [progress, setProgress] = useState(null);
+  const [generationId, setGenerationId] = useState(null);
 
-  const handleGenerateCreatives = async () => {
+  const handleGenerateCreatives = useCallback(async () => {
+    if (loading || !product.description) return;
     setLoading(true);
-    setProgress('Generating creative angles with Groq...');
+    const currentGenerationId = Date.now().toString();
+    setGenerationId(currentGenerationId);
 
     try {
-      // Check if reference images exist
-      const hasRefs = hasReferenceImages(product);
-      
-      // Step 1: Generate 5 creative angles with Groq (aware of reference images)
-      const angles = await generateCreativeAngles(
-        product.name,
-        product.description,
-        5,
-        hasRefs // Pass reference image awareness
-      );
-      
-      updateProduct(product.id, { creativeAngles: angles });
-      
-      if (hasRefs) {
-        setProgress(`Generated ${angles.length} creative angles. Creating images with reference photos...`);
-      } else {
-        setProgress(`Generated ${angles.length} creative angles. Creating images...`);
-      }
+      // Generate angles
+      setProgress('Generating creative angles...');
+      const { generateCreativeAngles } = await import('../services/groqService');
+      const anglesData = await generateCreativeAngles(product.description, product.name);
+      const angles = anglesData.angles;
+      if (!angles || angles.length === 0) throw new Error('No creative angles generated');
 
-      // Step 2: Generate images with Fal.ai (with or without reference images)
+      // Create progress tracker
+      const imageProgress = new ImageGenerationProgress(angles.length);
+      setProgress(imageProgress);
+
+      // Progress callback
+      const onImageProgress = (index, status, data) => {
+        if (generationId !== currentGenerationId) return;
+        imageProgress.updateImage(index, status, { prompt: angles[index], url: data, error: data });
+        setProgress({ ...imageProgress });
+      };
+
+      // Generate in parallel
       const imageResults = await generateMultipleImagesWithReference(
         angles,
-        product.referenceImages || [], // Pass reference images if available
-        {
-          aspectRatio: '1:1',
-          outputFormat: 'jpeg'
-        }
+        product.referenceImages || [],
+        { aspectRatio: '1:1', outputFormat: 'jpeg' },
+        onImageProgress
       );
 
-      // Step 3: Update product with successful results
+      if (generationId !== currentGenerationId) return;
+
+      // Update product
       const successfulImages = imageResults
-        .filter(result => result.success)
-        .map((result, index) => ({
-          angle: result.prompt,
-          url: result.url,
-          createdAt: new Date().toISOString()
-        }));
+        .filter(r => r.success)
+        .map(r => ({ angle: r.prompt, url: r.url, createdAt: new Date().toISOString() }));
 
-      updateProduct(product.id, { 
-        images: successfulImages,
-        lastGenerated: new Date().toISOString()
-      });
+      updateProduct(product.id, { images: successfulImages, lastGenerated: new Date().toISOString() });
 
-      setProgress('');
-      const modeText = hasRefs ? 'using reference images' : 'from text';
-      alert(`Successfully generated ${successfulImages.length} images ${modeText}!`);
+      setProgress(`✅ Generated ${successfulImages.length} images!`);
+      setTimeout(() => { if (generationId === currentGenerationId) setProgress(null); }, 3000);
+
     } catch (error) {
-      console.error('Error generating creatives:', error);
-      alert(`Error: ${error.message}`);
-      setProgress('');
+      setProgress(`❌ Error: ${error.message}`);
+      setTimeout(() => { if (generationId === currentGenerationId) setProgress(null); }, 5000);
     } finally {
       setLoading(false);
     }
-  };
+  }, [product, loading, generationId, updateProduct]);
 
-  const handleDownloadImage = async (url, index) => {
+  const handleDownloadImage = useCallback(async (url, index) => {
     try {
-      const filename = `${product.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-creative-${index + 1}.jpg`;
-      await downloadImage(url, filename);
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${product.name}-creative-${index + 1}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
+      console.error('Download failed:', error);
       alert('Failed to download image');
     }
-  };
+  }, [product.name]);
+
+  const handleCancelGeneration = useCallback(() => {
+    setGenerationId(null);
+    setProgress(null);
+    setLoading(false);
+  }, []);
+
+  const handleRetryFailed = useCallback(async (failedPrompts) => {
+    if (!progress || failedPrompts.length === 0) return;
+    // Retry logic here - similar to initial generation but for failed items
+  }, [progress, product, updateProduct]);
+
+  const handleRemoveFailed = useCallback((failedIndexes) => {
+    if (!product.images) return;
+    const filteredImages = product.images.filter((_, index) => !failedIndexes.includes(index));
+    updateProduct(product.id, { images: filteredImages });
+    setProgress(null);
+  }, [product.images, updateProduct]);
 
   const handleDeleteProduct = () => {
     if (confirm('Delete this product and all its data? This cannot be undone.')) {
@@ -125,12 +150,27 @@ export function ProductCard({ product }) {
         </div>
       )}
 
-      {/* Progress */}
-      {progress && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+      {/* Progress Components */}
+      {progress && typeof progress === 'object' && (
+        <>
+          <GenerationProgress progress={progress} onCancel={handleCancelGeneration} />
+          <GenerationErrorRecovery progress={progress} onRetryFailed={handleRetryFailed} onRemoveFailed={handleRemoveFailed} />
+          {progress.images.some(img => img.status === 'success') && (
+            <IncrementalImageDisplay progress={progress} onDownloadImage={handleDownloadImage} />
+          )}
+        </>
+      )}
+
+      {progress && typeof progress === 'string' && (
+        <div className={`p-3 rounded-lg mb-4 ${
+          progress.includes('✅') ? 'bg-green-50 text-green-800 border border-green-200' :
+          progress.includes('❌') ? 'bg-red-50 text-red-800 border border-red-200' :
+          'bg-blue-50 text-blue-800 border border-blue-200'
+        }`}>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-blue-700">{progress}</span>
+            {progress.includes('✅') && <div className="text-green-600">✓</div>}
+            {progress.includes('❌') && <AlertTriangle size={16} className="text-red-600" />}
+            <span className="text-sm font-medium">{progress}</span>
           </div>
         </div>
       )}
@@ -138,11 +178,14 @@ export function ProductCard({ product }) {
       {/* Generate Button */}
       <button
         onClick={handleGenerateCreatives}
-        disabled={loading}
-        className="w-full bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2 mb-4"
+        disabled={loading || !product.description}
+        className="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2 mb-4"
       >
-        <Wand2 size={18} />
-        {loading ? 'Generating...' : 'Generate Creative Images'}
+        {loading ? (
+          <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Generating...</>
+        ) : (
+          <><Sparkles size={18} />Generate Creative Images</>
+        )}
       </button>
 
       {/* Creative Angles */}
@@ -160,7 +203,7 @@ export function ProductCard({ product }) {
       )}
 
       {/* Generated Images */}
-      {product.images && product.images.length > 0 && (
+      {product.images && product.images.length > 0 && !progress && (
         <div>
           <h4 className="font-semibold text-gray-700 mb-2">Generated Images:</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
