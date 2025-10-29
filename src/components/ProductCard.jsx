@@ -12,11 +12,14 @@ import { GenerationErrorRecovery } from './GenerationErrorRecovery';
 import { useDialog, dialogHelpers } from './ui/DialogProvider';
 
 export function ProductCard({ product: productProp }) {
-  const { updateProduct, deleteProduct, products } = useProductStore();
-  const { showAlert, showConfirm, showSuccess } = useDialog();
+  // Subscribe to this specific product from store for reactive updates
+  const product = useProductStore(state => 
+    state.products.find(p => p.id === productProp.id) || productProp
+  );
+  const updateProduct = useProductStore(state => state.updateProduct);
+  const deleteProduct = useProductStore(state => state.deleteProduct);
   
-  // Get fresh product from store for reactive updates
-  const product = products.find(p => p.id === productProp.id) || productProp;
+  const { showAlert, showConfirm, showSuccess } = useDialog();
   
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(null);
