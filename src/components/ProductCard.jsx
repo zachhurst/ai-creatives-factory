@@ -37,7 +37,7 @@ export function ProductCard({ product }) {
       const anglesData = await generateCreativeAngles(product.name, product.description, 5, hasReferenceImages(product));
       console.log('🔍 DEBUG: Raw response from generateCreativeAngles:', anglesData);
       
-      const angles = anglesData.angles;
+      const angles = anglesData.angles || anglesData;
       console.log('🔍 DEBUG: Extracted angles:', angles);
       console.log('🔍 DEBUG: Angles length:', angles?.length);
       
