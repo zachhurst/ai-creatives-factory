@@ -23,6 +23,7 @@ export function ProductCard({ product: productProp }) {
   
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(null);
+  const [updateCounter, setUpdateCounter] = useState(0);
 
   const handleGenerateCreatives = useCallback(async () => {
     if (loading || !product.description) return;
@@ -58,7 +59,7 @@ export function ProductCard({ product: productProp }) {
       // Progress callback
       const onImageProgress = (index, status, data) => {
         imageProgress.updateImage(index, status, { prompt: angles[index], url: data, error: data });
-        setProgress({ ...imageProgress });
+        setUpdateCounter(c => c + 1); // Force re-render
       };
 
       // Generate in parallel
