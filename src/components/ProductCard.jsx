@@ -25,8 +25,7 @@ export function ProductCard({ product }) {
     try {
       // Generate angles
       setProgress('Generating creative angles...');
-      const { generateCreativeAngles } = await import('../services/groqService');
-      const anglesData = await generateCreativeAngles(product.description, product.name);
+      const anglesData = await generateCreativeAngles(product.name, product.description, 5, hasReferenceImages(product));
       const angles = anglesData.angles;
       if (!angles || angles.length === 0) throw new Error('No creative angles generated');
 
