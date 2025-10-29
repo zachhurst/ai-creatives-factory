@@ -240,7 +240,7 @@ export function ProductCard({ product: productProp }) {
           <div className="space-y-2">
             {product.creativeAngles.map((angle, index) => (
               <div key={index} className="text-sm text-gray-600 p-2 bg-gray-50 rounded">
-                <span className="font-medium text-gray-700">Angle {index + 1}:</span> {angle}
+                <span className="font-medium text-gray-700">Angle {index + 1}:</span> {typeof angle === 'string' ? angle : JSON.stringify(angle)}
               </div>
             ))}
           </div>
