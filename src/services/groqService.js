@@ -82,16 +82,25 @@ STYLE: Professional product photography, square format (1:1), social media ready
     
     const content = data.choices[0].message.content;
     console.log('🔍 GROQ DEBUG: Response content:', content);
+    console.log('🔍 GROQ DEBUG: Content length:', content.length);
+    console.log('🔍 GROQ DEBUG: First 200 chars:', content.substring(0, 200));
     
-    // Parse concepts from numbered format
-    const angles = content
-      .split(/Concept \d+:/)
+    // Parse concepts from numbered format (handles both "Concept 1:" and "**Concept 1:**")
+    let angles = content
+      .split(/\*?\*?Concept \d+:\*?\*?/)
       .slice(1)
       .map(text => text.trim())
       .filter(text => text.length > 0);
     
+    console.log('🔍 GROQ DEBUG: Split result:', content.split(/\*?\*?Concept \d+:\*?\*?/));
     console.log('🔍 GROQ DEBUG: Parsed angles:', angles);
     console.log('🔍 GROQ DEBUG: Number of angles:', angles.length);
+    
+    // Fallback: if no angles found, return the whole content as one angle
+    if (angles.length === 0 && content.trim().length > 0) {
+      console.log('🔍 GROQ DEBUG: No angles parsed, using content as single angle');
+      angles = [content.trim()];
+    }
     
     return { angles };
   } catch (error) {
