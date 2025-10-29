@@ -75,8 +75,18 @@ export function ProductCard({ product: productProp }) {
       console.log('🔍 DEBUG: Image results from Fal:', imageResults);
       console.log('🔍 DEBUG: Number of results:', imageResults.length);
       console.log('🔍 DEBUG: Results JSON:', JSON.stringify(imageResults, null, 2));
+      
+      console.log('🔍 DEBUG: Checking generation ID...');
+      console.log('🔍 DEBUG: currentGenerationId:', currentGenerationId);
+      console.log('🔍 DEBUG: generationId:', generationId);
+      console.log('🔍 DEBUG: Are they equal?', generationId === currentGenerationId);
 
-      if (generationId !== currentGenerationId) return;
+      if (generationId !== currentGenerationId) {
+        console.log('🔍 DEBUG: Generation ID mismatch - RETURNING EARLY!');
+        return;
+      }
+      
+      console.log('🔍 DEBUG: Generation ID check passed - continuing...');
 
       // Update product
       const successfulImages = imageResults
