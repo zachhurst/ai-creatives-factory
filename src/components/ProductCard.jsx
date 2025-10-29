@@ -23,13 +23,10 @@ export function ProductCard({ product: productProp }) {
   
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(null);
-  const [generationId, setGenerationId] = useState(null);
 
   const handleGenerateCreatives = useCallback(async () => {
     if (loading || !product.description) return;
     setLoading(true);
-    const currentGenerationId = Date.now().toString();
-    setGenerationId(currentGenerationId);
 
     try {
       // Generate angles
@@ -62,7 +59,6 @@ export function ProductCard({ product: productProp }) {
 
       // Progress callback
       const onImageProgress = (index, status, data) => {
-        if (generationId !== currentGenerationId) return;
         imageProgress.updateImage(index, status, { prompt: angles[index], url: data, error: data });
         setProgress({ ...imageProgress });
       };
@@ -78,18 +74,6 @@ export function ProductCard({ product: productProp }) {
       console.log('🔍 DEBUG: Image results from Fal:', imageResults);
       console.log('🔍 DEBUG: Number of results:', imageResults.length);
       console.log('🔍 DEBUG: Results JSON:', JSON.stringify(imageResults, null, 2));
-      
-      console.log('🔍 DEBUG: Checking generation ID...');
-      console.log('🔍 DEBUG: currentGenerationId:', currentGenerationId);
-      console.log('🔍 DEBUG: generationId:', generationId);
-      console.log('🔍 DEBUG: Are they equal?', generationId === currentGenerationId);
-
-      if (generationId !== currentGenerationId) {
-        console.log('🔍 DEBUG: Generation ID mismatch - RETURNING EARLY!');
-        return;
-      }
-      
-      console.log('🔍 DEBUG: Generation ID check passed - continuing...');
 
       // Update product
       const successfulImages = imageResults
@@ -129,7 +113,7 @@ export function ProductCard({ product: productProp }) {
     } finally {
       setLoading(false);
     }
-  }, [product, loading, generationId, updateProduct]);
+  }, [product, loading, updateProduct, showAlert, showSuccess]);
 
   const handleDownloadImage = useCallback(async (url, index) => {
     try {
@@ -150,7 +134,6 @@ export function ProductCard({ product: productProp }) {
   }, [product.name, showAlert]);
 
   const handleCancelGeneration = useCallback(() => {
-    setGenerationId(null);
     setProgress(null);
     setLoading(false);
   }, []);
