@@ -70,13 +70,23 @@ export function ProductCard({ product }) {
 
       console.log('🔍 DEBUG: Image results from Fal:', imageResults);
       console.log('🔍 DEBUG: Number of results:', imageResults.length);
+      console.log('🔍 DEBUG: Results JSON:', JSON.stringify(imageResults, null, 2));
 
       if (generationId !== currentGenerationId) return;
 
       // Update product
       const successfulImages = imageResults
-        .filter(r => r.success)
-        .map(r => ({ angle: r.prompt, url: r.url, createdAt: new Date().toISOString() }));
+        .filter(r => {
+          console.log('🔍 DEBUG: Checking result:', r);
+          console.log('🔍 DEBUG: Result.success:', r.success);
+          console.log('🔍 DEBUG: Result.url:', r.url);
+          return r.success;
+        })
+        .map(r => {
+          const mapped = { angle: r.prompt, url: r.url, createdAt: new Date().toISOString() };
+          console.log('🔍 DEBUG: Mapped image:', mapped);
+          return mapped;
+        });
 
       console.log('🔍 DEBUG: Successful images:', successfulImages);
       console.log('🔍 DEBUG: Number of successful images:', successfulImages.length);
@@ -85,6 +95,8 @@ export function ProductCard({ product }) {
       updateProduct(product.id, { images: successfulImages, lastGenerated: new Date().toISOString() });
       
       console.log('🔍 DEBUG: Product updated!');
+      console.log('🔍 DEBUG: Product.id:', product.id);
+      console.log('🔍 DEBUG: Product before update had images:', product.images?.length || 0);
       console.log('🔍 DEBUG: Clearing progress to show final images...');
 
       // Clear progress immediately so final images display
