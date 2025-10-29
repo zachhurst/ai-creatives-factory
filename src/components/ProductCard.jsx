@@ -68,6 +68,9 @@ export function ProductCard({ product }) {
         onImageProgress
       );
 
+      console.log('🔍 DEBUG: Image results from Fal:', imageResults);
+      console.log('🔍 DEBUG: Number of results:', imageResults.length);
+
       if (generationId !== currentGenerationId) return;
 
       // Update product
@@ -75,7 +78,13 @@ export function ProductCard({ product }) {
         .filter(r => r.success)
         .map(r => ({ angle: r.prompt, url: r.url, createdAt: new Date().toISOString() }));
 
+      console.log('🔍 DEBUG: Successful images:', successfulImages);
+      console.log('🔍 DEBUG: Number of successful images:', successfulImages.length);
+      console.log('🔍 DEBUG: Updating product with images...');
+      
       updateProduct(product.id, { images: successfulImages, lastGenerated: new Date().toISOString() });
+      
+      console.log('🔍 DEBUG: Product updated!');
 
       const modeText = hasReferenceImages(product) ? 'using reference images' : 'from text';
       showSuccess(dialogHelpers.generationSuccess(successfulImages.length, modeText));
@@ -226,7 +235,7 @@ export function ProductCard({ product }) {
       )}
 
       {/* Generated Images */}
-      {product.images && product.images.length > 0 && !progress && (
+      {product.images && product.images.length > 0 && (typeof progress !== 'object' || !progress) && (
         <div>
           <h4 className="font-semibold text-gray-700 mb-2">Generated Images:</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
