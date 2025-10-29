@@ -5,6 +5,7 @@ import { ProductList } from './components/ProductList';
 import { ImageUploadTest } from './components/ImageUploadTest';
 import { ParallelGenerationTest } from './components/ParallelGenerationTest';
 import { FalGenerationTest } from './components/FalGenerationTest';
+import { GroqTest } from './components/GroqTest';
 import { DialogProvider } from './components/ui/DialogProvider';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           {/* Development Testing Section */}
           {import.meta.env.DEV && (
             <div className="mt-8 space-y-6">
+              <GroqTest />
               <ImageUploadTest />
               <ParallelGenerationTest />
               <FalGenerationTest />

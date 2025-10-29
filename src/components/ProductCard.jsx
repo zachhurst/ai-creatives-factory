@@ -26,10 +26,25 @@ export function ProductCard({ product }) {
 
     try {
       // Generate angles
+      console.log('🔍 DEBUG: Starting generation...');
+      console.log('🔍 DEBUG: Product name:', product.name);
+      console.log('🔍 DEBUG: Product description:', product.description);
+      console.log('🔍 DEBUG: Has reference images:', hasReferenceImages(product));
+      
       setProgress('Generating creative angles...');
+      
+      console.log('🔍 DEBUG: Calling generateCreativeAngles...');
       const anglesData = await generateCreativeAngles(product.name, product.description, 5, hasReferenceImages(product));
+      console.log('🔍 DEBUG: Raw response from generateCreativeAngles:', anglesData);
+      
       const angles = anglesData.angles;
-      if (!angles || angles.length === 0) throw new Error('No creative angles generated');
+      console.log('🔍 DEBUG: Extracted angles:', angles);
+      console.log('🔍 DEBUG: Angles length:', angles?.length);
+      
+      if (!angles || angles.length === 0) {
+        console.log('🔍 DEBUG: No angles found - throwing error');
+        throw new Error('No creative angles generated');
+      }
 
       // Create progress tracker
       const imageProgress = new ImageGenerationProgress(angles.length);

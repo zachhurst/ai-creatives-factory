@@ -7,9 +7,14 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
 export async function generateCreativeAngles(productName, productDescription, numAngles = 5, hasReferenceImages = false) {
+  console.log('🔍 GROQ DEBUG: Function called with:', { productName, productDescription, numAngles, hasReferenceImages });
+  
   if (!GROQ_API_KEY) {
+    console.log('🔍 GROQ DEBUG: No API key found!');
     throw new Error('VITE_GROQ_API_KEY is not set in environment variables');
   }
+  
+  console.log('🔍 GROQ DEBUG: API key exists, length:', GROQ_API_KEY.length);
 
   const systemPrompt = `You are an expert advertising creative director specializing in product photography and social media ad design. Generate detailed image prompts for professional product advertisements that look like they were created by a top agency. Focus on clean composition, bold typography, vibrant colors, and commercial appeal.`;
 
@@ -39,6 +44,8 @@ FORMAT: Start each with "Concept 1:", "Concept 2:", etc. Make each description d
 STYLE: Professional product photography, square format (1:1), social media ready, scroll-stopping appeal.`;
 
   try {
+    console.log('🔍 GROQ DEBUG: Making API call to:', GROQ_API_URL);
+    
     const response = await fetch(GROQ_API_URL, {
       method: 'POST',
       headers: {
@@ -56,13 +63,25 @@ STYLE: Professional product photography, square format (1:1), social media ready
       })
     });
 
+    console.log('🔍 GROQ DEBUG: Response status:', response.status);
+    console.log('🔍 GROQ DEBUG: Response ok:', response.ok);
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Groq API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+      console.log('🔍 GROQ DEBUG: Error response:', errorData);
+      throw new Error(`Groq API error: ${response.status} - ${errorData.error?.message || response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('🔍 GROQ DEBUG: Success response data:', data);
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.log('🔍 GROQ DEBUG: Invalid response structure:', data);
+      throw new Error('Invalid response structure from Groq API');
+    }
+    
     const content = data.choices[0].message.content;
+    console.log('🔍 GROQ DEBUG: Response content:', content);
     
     // Parse concepts from numbered format
     const angles = content
@@ -71,18 +90,25 @@ STYLE: Professional product photography, square format (1:1), social media ready
       .map(text => text.trim())
       .filter(text => text.length > 0);
     
-    return angles;
+    console.log('🔍 GROQ DEBUG: Parsed angles:', angles);
+    console.log('🔍 GROQ DEBUG: Number of angles:', angles.length);
+    
+    return { angles };
   } catch (error) {
-    console.error('Error generating creative angles:', error);
+    console.error('🔍 GROQ DEBUG: Error in generateCreativeAngles:', error);
+    console.error('🔍 GROQ DEBUG: Error stack:', error.stack);
     throw new Error(`Failed to generate creative angles: ${error.message}`);
   }
 }
 
 export async function testGroqConnection() {
+  console.log('🔍 GROQ DEBUG: Testing connection...');
   try {
-    const angles = await generateCreativeAngles('Test Product', 'This is a test product for connection testing', 2);
-    return { success: true, angles };
+    const result = await generateCreativeAngles('Test Product', 'This is a test product for connection testing', 2);
+    console.log('🔍 GROQ DEBUG: Test successful:', result);
+    return { success: true, result };
   } catch (error) {
+    console.log('🔍 GROQ DEBUG: Test failed:', error);
     return { success: false, error: error.message };
   }
 }
