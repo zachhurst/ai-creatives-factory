@@ -176,14 +176,25 @@ export async function generateImageWithReference(prompt, referenceImageUrls, opt
 }
 
 /**
- * Generate multiple images with optional reference images
+ * Generate multiple images with optional reference images in PARALLEL
  * Automatically chooses appropriate endpoint based on reference images
+ * @param prompts - Array of image prompts
+ * @param referenceImageUrls - Optional array of reference image URLs
+ * @param options - Generation options
+ * @param onProgress - Optional callback: (index, status, data) => void
  */
-export async function generateMultipleImagesWithReference(prompts, referenceImageUrls = [], options = {}) {
-  const results = [];
-  
-  for (const prompt of prompts) {
+export async function generateMultipleImagesWithReference(
+  prompts, 
+  referenceImageUrls = [], 
+  options = {},
+  onProgress = null
+) {
+  // Create array of promises for parallel execution
+  const imagePromises = prompts.map(async (prompt, index) => {
     try {
+      // Notify start
+      onProgress?.(index, 'generating', { prompt });
+      
       let result;
       
       if (referenceImageUrls.length > 0) {
@@ -194,21 +205,33 @@ export async function generateMultipleImagesWithReference(prompts, referenceImag
         result = await generateImage(prompt, options);
       }
       
-      results.push({ 
+      // Notify success
+      onProgress?.(index, 'success', { url: result.url, prompt });
+      
+      return { 
         prompt, 
         url: result.url, 
-        success: true 
-      });
+        success: true,
+        index 
+      };
     } catch (error) {
-      results.push({ 
+      // Notify error
+      onProgress?.(index, 'error', { error: error.message, prompt });
+      
+      return { 
         prompt, 
         error: error.message, 
-        success: false 
-      });
+        success: false,
+        index 
+      };
     }
-  }
+  });
+
+  // Execute all in parallel and wait for completion
+  const results = await Promise.all(imagePromises);
   
-  return results;
+  // Sort by original index to maintain order
+  return results.sort((a, b) => a.index - b.index);
 }
 
 /**

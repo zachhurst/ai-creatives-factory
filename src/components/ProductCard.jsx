@@ -6,51 +6,59 @@ import { generateMultipleImagesWithReference } from '../services/falService';
 import { downloadImage, formatDate, hasReferenceImages, getGenerationMode } from '../utils/helpers';
 import { useDialog } from './ui/DialogProvider';
 import { ImagePreview } from './ImagePreview';
+import { GenerationProgress } from './GenerationProgress';
+import { ImageGenerationProgress, ImageGenerationStatus } from '../utils/imageGeneration';
 
 export function ProductCard({ product }) {
   const { updateProduct, deleteProduct } = useProductStore();
   const { showAlert, showConfirm, showSuccess } = useDialog();
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState('');
+  const [progress, setProgress] = useState(null);
+  const [updateCounter, setUpdateCounter] = useState(0);
 
   const handleGenerateCreatives = async () => {
     setLoading(true);
-    setProgress('Generating creative angles with Groq...');
 
     try {
       // Check if reference images exist
       const hasRefs = hasReferenceImages(product);
       
-      // Step 1: Generate 5 creative angles with Groq (aware of reference images)
+      // Step 1: Generate creative angles with Groq
       const angles = await generateCreativeAngles(
         product.name,
         product.description,
         5,
-        hasRefs // Pass reference image awareness
+        hasRefs
       );
       
       updateProduct(product.id, { creativeAngles: angles });
-      
-      if (hasRefs) {
-        setProgress(`Generated ${angles.length} creative angles. Creating images with reference photos...`);
-      } else {
-        setProgress(`Generated ${angles.length} creative angles. Creating images...`);
-      }
 
-      // Step 2: Generate images with Fal.ai (with or without reference images)
+      // Step 2: Initialize progress tracker
+      const progressTracker = new ImageGenerationProgress(angles.length);
+      setProgress(progressTracker);
+
+      // Step 3: Progress callback - updates UI in real-time
+      const handleProgress = (index, status, data) => {
+        progressTracker.updateImage(index, status, data);
+        // Force re-render with counter - keeps class methods intact
+        setUpdateCounter(c => c + 1);
+      };
+
+      // Step 4: Generate images in PARALLEL with progress callbacks
       const imageResults = await generateMultipleImagesWithReference(
         angles,
-        product.referenceImages || [], // Pass reference images if available
+        product.referenceImages || [],
         {
           aspectRatio: '1:1',
           outputFormat: 'jpeg'
-        }
+        },
+        handleProgress  // Pass callback for real-time updates
       );
 
-      // Step 3: Update product with successful results
+      // Step 5: Update product with successful results
       const successfulImages = imageResults
         .filter(result => result.success)
-        .map((result, index) => ({
+        .map((result) => ({
           angle: result.prompt,
           url: result.url,
           createdAt: new Date().toISOString()
@@ -61,13 +69,13 @@ export function ProductCard({ product }) {
         lastGenerated: new Date().toISOString()
       });
 
-      setProgress('');
+      setProgress(null);  // Clear progress on completion
       const modeText = hasRefs ? 'using reference images' : 'from text';
       showSuccess(`Successfully generated ${successfulImages.length} images ${modeText}!`);
     } catch (error) {
       console.error('Error generating creatives:', error);
       showAlert(`Error: ${error.message}`);
-      setProgress('');
+      setProgress(null);
     } finally {
       setLoading(false);
     }
@@ -128,14 +136,12 @@ export function ProductCard({ product }) {
         </div>
       )}
 
-      {/* Progress */}
+      {/* Real-time Progress Display */}
       {progress && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-blue-700">{progress}</span>
-          </div>
-        </div>
+        <GenerationProgress 
+          progress={progress}
+          onCancel={() => setProgress(null)}
+        />
       )}
 
       {/* Generate Button */}
