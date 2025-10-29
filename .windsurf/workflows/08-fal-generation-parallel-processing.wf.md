@@ -1,3 +1,8 @@
+---
+description: 
+auto_execution_mode: 3
+---
+
 # AI Creative Factory - Fal.ai Generation UI Improvements
 ## WORKFLOW PHASE 8: Parallel Processing & Visual Feedback (Part 1 of 3)
 
