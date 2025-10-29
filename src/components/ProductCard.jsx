@@ -9,9 +9,11 @@ import { ImageGenerationProgress } from '../utils/imageGeneration';
 import { GenerationProgress } from './GenerationProgress';
 import { IncrementalImageDisplay } from './IncrementalImageDisplay';
 import { GenerationErrorRecovery } from './GenerationErrorRecovery';
+import { useDialog, dialogHelpers } from './ui/DialogProvider';
 
 export function ProductCard({ product }) {
   const { updateProduct, deleteProduct } = useProductStore();
+  const { showAlert, showConfirm, showSuccess } = useDialog();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(null);
   const [generationId, setGenerationId] = useState(null);
@@ -57,10 +59,13 @@ export function ProductCard({ product }) {
 
       updateProduct(product.id, { images: successfulImages, lastGenerated: new Date().toISOString() });
 
+      const modeText = hasReferenceImages(product) ? 'using reference images' : 'from text';
+      showSuccess(dialogHelpers.generationSuccess(successfulImages.length, modeText));
       setProgress(`✅ Generated ${successfulImages.length} images!`);
       setTimeout(() => { if (generationId === currentGenerationId) setProgress(null); }, 3000);
 
     } catch (error) {
+      showAlert(dialogHelpers.generationError(error.message));
       setProgress(`❌ Error: ${error.message}`);
       setTimeout(() => { if (generationId === currentGenerationId) setProgress(null); }, 5000);
     } finally {
@@ -82,9 +87,9 @@ export function ProductCard({ product }) {
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error('Download failed:', error);
-      alert('Failed to download image');
+      showAlert(dialogHelpers.downloadError());
     }
-  }, [product.name]);
+  }, [product.name, showAlert]);
 
   const handleCancelGeneration = useCallback(() => {
     setGenerationId(null);
@@ -104,8 +109,9 @@ export function ProductCard({ product }) {
     setProgress(null);
   }, [product.images, updateProduct]);
 
-  const handleDeleteProduct = () => {
-    if (confirm('Delete this product and all its data? This cannot be undone.')) {
+  const handleDeleteProduct = async () => {
+    const confirmed = await showConfirm(dialogHelpers.confirmDelete('product'));
+    if (confirmed) {
       deleteProduct(product.id);
     }
   };

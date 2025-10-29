@@ -1,11 +1,14 @@
 import { Wand2, Trash2 } from 'lucide-react';
 import { useProductStore } from '../store/productStore';
+import { useDialog, dialogHelpers } from './ui/DialogProvider';
 
 export function Header() {
   const clearAllProducts = useProductStore(state => state.clearAllProducts);
+  const { showConfirm } = useDialog();
 
-  const handleClearAll = () => {
-    if (confirm('Delete all products and data? This cannot be undone.')) {
+  const handleClearAll = async () => {
+    const confirmed = await showConfirm(dialogHelpers.confirmDeleteAll());
+    if (confirmed) {
       clearAllProducts();
     }
   };

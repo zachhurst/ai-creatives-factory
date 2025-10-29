@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useProductStore } from '../store/productStore';
+import { useDialog, dialogHelpers } from './ui/DialogProvider';
 
 export function ProductForm() {
   const addProduct = useProductStore(state => state.addProduct);
+  const { showAlert } = useDialog();
   const [productName, setProductName] = useState('');
   const [productDescription, setProductDescription] = useState('');
 
@@ -11,7 +13,7 @@ export function ProductForm() {
     e.preventDefault();
     
     if (!productName.trim() || !productDescription.trim()) {
-      alert('Please fill in both product name and description');
+      showAlert(dialogHelpers.validationError('Please fill in both product name and description'));
       return;
     }
 

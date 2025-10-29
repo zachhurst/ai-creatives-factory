@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { uploadImageToFal } from '../services/falService';
 import { validateImageFiles, generateLocalImageUrl, revokeLocalImageUrl } from '../utils/helpers';
+import { useDialog, dialogHelpers } from './ui/DialogProvider';
 
 export function ImageUploadZone({
   onImagesUploaded,
@@ -10,6 +11,7 @@ export function ImageUploadZone({
   className = '',
   disabled = false
 }) {
+  const { showAlert } = useDialog();
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
@@ -20,13 +22,13 @@ export function ImageUploadZone({
     // Validate files
     const validation = validateImageFiles(fileArray);
     if (!validation.isValid) {
-      alert(`Upload errors:\n${validation.errors.join('\n')}`);
+      showAlert(dialogHelpers.validationError(validation.errors));
       return;
     }
 
     // Check total file limit
     if (uploadedImages.length + fileArray.length > maxFiles) {
-      alert(`Maximum ${maxFiles} images allowed`);
+      showAlert(dialogHelpers.warning('File Limit', `Maximum ${maxFiles} images allowed`));
       return;
     }
 
